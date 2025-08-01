@@ -1,0 +1,1193 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mess Mate – Smart Food Management Dashboard</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js for graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <script>
+        // Custom configuration for Tailwind to extend colors
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'brand-primary': '#0d9488', // Teal
+                        'brand-secondary': '#f97316', // Orange
+                        'dark-bg': '#111827',
+                        'dark-card': '#1f2937',
+                        'light-bg': '#f9fafb',
+                        'light-card': '#ffffff',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom styles for a polished look */
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.5s, color 0.5s;
+        }
+
+        /* Custom scrollbar for a better aesthetic */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
+        }
+
+        /* Animation for widget entry */
+        .widget {
+            animation: fadeIn 0.6s ease-in-out forwards;
+            opacity: 0;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(25px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Star rating styles */
+        .rating {
+            display: inline-block;
+        }
+        .rating input {
+            display: none;
+        }
+        .rating label {
+            float: right;
+            cursor: pointer;
+            color: #9ca3af;
+            transition: color 0.2s;
+        }
+        .rating label:before {
+            content: '\2605';
+            font-size: 2rem;
+        }
+        .rating input:checked ~ label,
+        .rating label:hover,
+        .rating label:hover ~ label {
+            color: #f59e0b;
+        }
+        
+        /* Smooth transitions for interactive elements */
+        .nav-link, .quick-link, button, a {
+            transition: all 0.2s ease-in-out;
+        }
+        
+        .nav-link.active {
+             background-color: #ccfbf1; /* A light teal */
+             color: #0f766e; /* A dark teal */
+             font-weight: 600;
+        }
+        .dark .nav-link.active {
+            background-color: #1f2937;
+            color: #5eead4; /* A bright teal for dark mode */
+        }
+        .hidden-by-role {
+            display: none !important;
+        }
+    </style>
+</head>
+<body class="bg-light-bg dark:bg-dark-bg text-gray-800 dark:text-gray-200">
+
+    <!-- Login Page -->
+    <div id="login-page" class="min-h-screen flex items-center justify-center bg-light-bg dark:bg-dark-bg p-4">
+        <div class="w-full max-w-md bg-light-card dark:bg-dark-card p-8 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
+            <h1 class="text-3xl font-extrabold text-brand-primary text-center mb-2">Mess Mate</h1>
+            <p class="text-center text-gray-500 dark:text-gray-400 mb-8">Smart Food Management</p>
+            <form id="login-form">
+                <div class="mb-4">
+                    <label for="username" class="block text-sm font-medium mb-2">Username</label>
+                    <input type="text" id="username" required class="w-full p-3 border rounded-lg bg-gray-50 dark:bg-gray-800 border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-brand-primary focus:border-transparent" placeholder="Enter your username">
+                </div>
+                <div class="mb-4">
+                    <label for="password" class="block text-sm font-medium mb-2">Password</label>
+                    <input type="password" id="password" required class="w-full p-3 border rounded-lg bg-gray-50 dark:bg-gray-800 border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-brand-primary focus:border-transparent" placeholder="Enter your password">
+                </div>
+                <div class="mb-6">
+                    <label for="user-role" class="block text-sm font-medium mb-2">Role</label>
+                    <select id="user-role" class="w-full p-3 border rounded-lg bg-gray-50 dark:bg-gray-800 border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-brand-primary focus:border-transparent">
+                        <option value="student">Student</option>
+                        <option value="staff">Staff</option>
+                    </select>
+                </div>
+                <button type="submit" class="w-full bg-brand-primary text-white py-3 px-4 rounded-lg font-semibold hover:bg-teal-700">Login</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Application -->
+    <div id="app-container" class="min-h-screen hidden flex-col lg:flex-row transition-all duration-500">
+        
+        <!-- Sidebar Navigation -->
+        <nav class="bg-light-card dark:bg-dark-card shadow-lg lg:w-64 p-4 lg:p-6 flex-shrink-0 border-r border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between mb-8">
+                <div>
+                    <h1 class="text-2xl font-extrabold text-brand-primary">Mess Mate</h1>
+                    <p id="user-info" class="text-sm text-gray-500 dark:text-gray-400"></p>
+                </div>
+                <button id="theme-toggle" class="p-2 rounded-full text-gray-500 hover:text-brand-primary hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <i data-lucide="sun" class="block dark:hidden"></i>
+                    <i data-lucide="moon" class="hidden dark:block"></i>
+                </button>
+            </div>
+            <ul class="space-y-2">
+                <li><a href="#dashboard" class="nav-link flex items-center p-3 rounded-lg"><i data-lucide="layout-dashboard" class="mr-3 h-5 w-5"></i>Dashboard</a></li>
+                <li><a href="#menu" class="nav-link flex items-center p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"><i data-lucide="utensils-crossed" class="mr-3 h-5 w-5"></i>Weekly Menu</a></li>
+                <li data-role="student"><a href="#feedback" class="nav-link flex items-center p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"><i data-lucide="star" class="mr-3 h-5 w-5"></i>Feedback</a></li>
+                <li data-role="staff"><a href="#feedback-stats" class="nav-link flex items-center p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"><i data-lucide="pie-chart" class="mr-3 h-5 w-5"></i>Feedback Stats</a></li>
+                <li><a href="#waste" class="nav-link flex items-center p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"><i data-lucide="bar-chart-3" class="mr-3 h-5 w-5"></i>Waste Stats</a></li>
+                <li><a href="#complaints" class="nav-link flex items-center p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"><i data-lucide="file-pen-line" class="mr-3 h-5 w-5"></i>Complaints</a></li>
+                <li data-role="student"><a href="#suggestions" class="nav-link flex items-center p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"><i data-lucide="lightbulb" class="mr-3 h-5 w-5"></i>Suggestions</a></li>
+                <li><a href="#polls" class="nav-link flex items-center p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"><i data-lucide="vote" class="mr-3 h-5 w-5"></i>Dish Polls</a></li>
+            </ul>
+             <div class="mt-auto pt-6">
+                 <button id="logout-btn" class="w-full flex items-center p-3 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 font-semibold text-left mb-2">
+                    <i data-lucide="log-out" class="mr-3 h-5 w-5"></i>Logout
+                </button>
+                <button id="mood-background-btn" class="w-full flex items-center p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-left">
+                    <i data-lucide="palette" class="mr-3 h-5 w-5"></i>Mood Background
+                </button>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+            
+            <!-- Header -->
+            <header class="mb-8">
+                <h2 id="greeting" class="text-4xl font-bold text-gray-800 dark:text-white">Good Morning!</h2>
+                <p id="date-time" class="text-gray-500 dark:text-gray-400 mt-1 text-lg"></p>
+            </header>
+
+            <!-- Widgets Container -->
+            <div id="widgets-container" class="space-y-8">
+                <!-- Dashboard View -->
+                <section id="dashboard" class="widget">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <div class="lg:col-span-2 bg-light-card dark:bg-dark-card p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
+                            <h3 class="font-bold text-xl mb-4">Quick Actions</h3>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <a href="#menu" class="quick-link text-center p-4 bg-gray-100 dark:bg-gray-700/50 rounded-xl hover:bg-teal-100 dark:hover:bg-teal-900/50 hover:-translate-y-1">
+                                    <i data-lucide="utensils-crossed" class="mx-auto h-10 w-10 text-teal-500"></i><span class="mt-2 block text-sm font-semibold">View Menu</span>
+                                </a>
+                                 <a href="#feedback" data-role="student" class="quick-link text-center p-4 bg-gray-100 dark:bg-gray-700/50 rounded-xl hover:bg-amber-100 dark:hover:bg-amber-900/50 hover:-translate-y-1">
+                                    <i data-lucide="star" class="mx-auto h-10 w-10 text-amber-500"></i><span class="mt-2 block text-sm font-semibold">Rate Food</span>
+                                </a>
+                                 <a href="#polls" class="quick-link text-center p-4 bg-gray-100 dark:bg-gray-700/50 rounded-xl hover:bg-green-100 dark:hover:bg-green-900/50 hover:-translate-y-1">
+                                    <i data-lucide="vote" class="mx-auto h-10 w-10 text-green-500"></i><span class="mt-2 block text-sm font-semibold">Vote Dish</span>
+                                </a>
+                                <a href="#suggestions" data-role="student" class="quick-link text-center p-4 bg-gray-100 dark:bg-gray-700/50 rounded-xl hover:bg-purple-100 dark:hover:bg-purple-900/50 hover:-translate-y-1">
+                                    <i data-lucide="lightbulb" class="mx-auto h-10 w-10 text-purple-500"></i><span class="mt-2 block text-sm font-semibold">Suggest Dish</span>
+                                </a>
+                            </div>
+                        </div>
+                        <!-- Focus Music -->
+                        <div class="bg-light-card dark:bg-dark-card p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
+                            <h3 class="font-bold text-xl mb-4">Focus Music</h3>
+                            <div class="space-y-3">
+                                <a href="https://www.youtube.com/watch?v=5qap5aO4i9A" target="_blank" class="flex items-center p-3 bg-gray-100 dark:bg-gray-700/50 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50">
+                                    <i data-lucide="youtube" class="text-red-500 mr-4 h-6 w-6"></i> <span class="font-medium">LoFi Hip Hop Radio</span>
+                                </a>
+                                <a href="https://www.youtube.com/watch?v=DWcJgA8Tfw4" target="_blank" class="flex items-center p-3 bg-gray-100 dark:bg-gray-700/50 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50">
+                                    <i data-lucide="music-4" class="text-blue-500 mr-4 h-6 w-6"></i> <span class="font-medium">Relaxing Jazz Piano</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Weekly Menu -->
+                <section id="menu" class="widget hidden bg-light-card dark:bg-dark-card p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="font-bold text-2xl">This Week's Menu</h3>
+                        <button id="edit-menu-btn" data-role="staff" class="flex items-center gap-2 bg-brand-primary text-white py-2 px-4 rounded-lg font-semibold hover:bg-teal-700">
+                            <i data-lucide="pencil" class="h-4 w-4"></i>Edit Menu
+                        </button>
+                    </div>
+                    <div id="menu-view">
+                        <div id="menu-tabs" class="flex border-b border-gray-200 dark:border-gray-700 mb-6 overflow-x-auto"></div>
+                        <div id="menu-content" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6"></div>
+                    </div>
+                    <div id="menu-edit-form" class="hidden">
+                        <!-- Edit form will be generated here by JS -->
+                    </div>
+                </section>
+
+                <!-- Feedback Form -->
+                <section id="feedback" data-role="student" class="widget hidden bg-light-card dark:bg-dark-card p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
+                    <h3 class="font-bold text-2xl mb-4">Rate Today's Meals</h3>
+                    <form id="feedback-form">
+                        <div class="space-y-6">
+                            <!-- Breakfast Rating -->
+                            <div class="p-4 border rounded-lg dark:border-gray-700">
+                                <label class="block text-lg font-medium mb-2">Breakfast</label>
+                                <div class="rating">
+                                    <input type="radio" id="b-star5" name="rating-breakfast" value="5" /><label for="b-star5"></label>
+                                    <input type="radio" id="b-star4" name="rating-breakfast" value="4" /><label for="b-star4"></label>
+                                    <input type="radio" id="b-star3" name="rating-breakfast" value="3" /><label for="b-star3"></label>
+                                    <input type="radio" id="b-star2" name="rating-breakfast" value="2" /><label for="b-star2"></label>
+                                    <input type="radio" id="b-star1" name="rating-breakfast" value="1" /><label for="b-star1"></label>
+                                </div>
+                            </div>
+                            <!-- Lunch Rating -->
+                            <div class="p-4 border rounded-lg dark:border-gray-700">
+                                <label class="block text-lg font-medium mb-2">Lunch</label>
+                                <div class="rating">
+                                    <input type="radio" id="l-star5" name="rating-lunch" value="5" /><label for="l-star5"></label>
+                                    <input type="radio" id="l-star4" name="rating-lunch" value="4" /><label for="l-star4"></label>
+                                    <input type="radio" id="l-star3" name="rating-lunch" value="3" /><label for="l-star3"></label>
+                                    <input type="radio" id="l-star2" name="rating-lunch" value="2" /><label for="l-star2"></label>
+                                    <input type="radio" id="l-star1" name="rating-lunch" value="1" /><label for="l-star1"></label>
+                                </div>
+                            </div>
+                            <!-- Snacks Rating -->
+                            <div class="p-4 border rounded-lg dark:border-gray-700">
+                                <label class="block text-lg font-medium mb-2">Snacks</label>
+                                <div class="rating">
+                                    <input type="radio" id="s-star5" name="rating-snacks" value="5" /><label for="s-star5"></label>
+                                    <input type="radio" id="s-star4" name="rating-snacks" value="4" /><label for="s-star4"></label>
+                                    <input type="radio" id="s-star3" name="rating-snacks" value="3" /><label for="s-star3"></label>
+                                    <input type="radio" id="s-star2" name="rating-snacks" value="2" /><label for="s-star2"></label>
+                                    <input type="radio" id="s-star1" name="rating-snacks" value="1" /><label for="s-star1"></label>
+                                </div>
+                            </div>
+                            <!-- Dinner Rating -->
+                            <div class="p-4 border rounded-lg dark:border-gray-700">
+                                <label class="block text-lg font-medium mb-2">Dinner</label>
+                                <div class="rating">
+                                    <input type="radio" id="d-star5" name="rating-dinner" value="5" /><label for="d-star5"></label>
+                                    <input type="radio" id="d-star4" name="rating-dinner" value="4" /><label for="d-star4"></label>
+                                    <input type="radio" id="d-star3" name="rating-dinner" value="3" /><label for="d-star3"></label>
+                                    <input type="radio" id="d-star2" name="rating-dinner" value="2" /><label for="d-star2"></label>
+                                    <input type="radio" id="d-star1" name="rating-dinner" value="1" /><label for="d-star1"></label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-6 mb-4">
+                            <label for="comments" class="block text-sm font-medium mb-2">Overall Comments (optional)</label>
+                            <textarea id="comments" rows="4" class="w-full p-3 border rounded-lg bg-gray-50 dark:bg-gray-800 border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-brand-primary focus:border-transparent"></textarea>
+                        </div>
+                        <button type="submit" class="w-full bg-brand-primary text-white py-3 px-4 rounded-lg font-semibold hover:bg-teal-700">Submit Feedback</button>
+                    </form>
+                    <div id="feedback-thanks" class="hidden text-center p-8">
+                        <i data-lucide="check-circle-2" class="text-green-500 h-16 w-16 mx-auto mb-4"></i>
+                        <h4 class="text-xl font-semibold">Thank you for your feedback!</h4>
+                    </div>
+                </section>
+
+                <!-- Feedback Stats -->
+                <section id="feedback-stats" data-role="staff" class="widget hidden bg-light-card dark:bg-dark-card p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
+                    <h3 class="font-bold text-2xl mb-4">Meal Feedback Statistics</h3>
+                    <p class="text-gray-600 dark:text-gray-400 mb-6">Average meal ratings based on student feedback.</p>
+                    <div id="feedback-chart-container" class="h-96 relative">
+                        <canvas id="feedback-chart"></canvas>
+                        <div id="no-feedback-data" class="absolute inset-0 items-center justify-center hidden">
+                            <p class="text-gray-500">No feedback has been submitted yet.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Food Waste Stats -->
+                <section id="waste" class="widget hidden bg-light-card dark:bg-dark-card p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
+                    <h3 class="font-bold text-2xl mb-4">Food Waste Statistics</h3>
+                    <p class="text-gray-600 dark:text-gray-400 mb-6">Chart shows the most wasted items based on student reports.</p>
+                    <div id="waste-chart-container" class="h-96 relative">
+                        <canvas id="waste-chart"></canvas>
+                        <div id="no-waste-data" class="absolute inset-0 items-center justify-center hidden">
+                            <p class="text-gray-500">No waste data reported yet.</p>
+                        </div>
+                    </div>
+                    
+                    <div id="waste-reporting-section" data-role="student" class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+                        <h4 class="font-bold text-xl mb-4">Report Wasted Food for Today</h4>
+                        <form id="waste-report-form"></form>
+                        <div id="waste-report-thanks" class="hidden text-center p-8 bg-green-50 dark:bg-green-900/30 rounded-lg">
+                            <i data-lucide="check-circle-2" class="text-green-500 h-12 w-12 mx-auto mb-3"></i>
+                            <h4 class="text-lg font-semibold">Thanks for your report!</h4>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">Your input helps us reduce waste.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Complaint Form -->
+                <section id="complaints" class="widget hidden bg-light-card dark:bg-dark-card p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
+                    <div id="complaint-submission-section" data-role="student">
+                        <h3 class="font-bold text-2xl mb-4">Submit a Complaint</h3>
+                        <form id="complaint-form">
+                            <div class="mb-4">
+                                <label for="complaint-issue" class="block text-sm font-medium mb-2">Describe your complaint</label>
+                                <textarea id="complaint-issue" rows="5" required class="w-full p-3 border rounded-lg bg-gray-50 dark:bg-gray-800 border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-brand-secondary focus:border-transparent"></textarea>
+                            </div>
+                            <button type="submit" class="w-full bg-brand-secondary text-white py-3 px-4 rounded-lg font-semibold hover:bg-orange-600">Submit Complaint</button>
+                        </form>
+                        <div id="complaint-thanks" class="hidden text-center p-8">
+                            <i data-lucide="check-circle-2" class="text-green-500 h-16 w-16 mx-auto mb-4"></i>
+                            <h4 class="text-xl font-semibold">Complaint has been registered.</h4>
+                        </div>
+                    </div>
+                    <div id="complaint-list-section" data-role="staff">
+                         <h3 class="font-bold text-2xl mb-4">Complaint Inbox</h3>
+                         <div id="complaint-list-container" class="space-y-4 max-h-[60vh] overflow-y-auto">
+                            <!-- Complaints will be rendered here -->
+                         </div>
+                    </div>
+                </section>
+                
+                <!-- Dish Suggestion Form -->
+                <section id="suggestions" data-role="student" class="widget hidden bg-light-card dark:bg-dark-card p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
+                    <h3 class="font-bold text-2xl mb-4">Suggest a Dish!</h3>
+                    <p class="mb-6 text-gray-600 dark:text-gray-400">Let the kitchen know what you'd like to see on the menu.</p>
+                    <form id="suggestion-form">
+                        <div class="mb-4">
+                            <label for="suggestion-text" class="block text-sm font-medium mb-2">Your Dish Suggestion</label>
+                            <textarea id="suggestion-text" rows="4" required class="w-full p-3 border rounded-lg bg-gray-50 dark:bg-gray-800 border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="e.g., 'Spaghetti Aglio e Olio'"></textarea>
+                        </div>
+                        <button type="submit" class="w-full bg-purple-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-purple-700">Submit Suggestion</button>
+                    </form>
+                    <div id="suggestion-thanks" class="hidden text-center p-8">
+                        <i data-lucide="check-circle-2" class="text-green-500 h-16 w-16 mx-auto mb-4"></i>
+                        <h4 class="text-xl font-semibold">Thank you! Your suggestion has been noted.</h4>
+                    </div>
+                </section>
+
+                <!-- Poll-Based Voting System -->
+                <section id="polls" class="widget hidden bg-light-card dark:bg-dark-card p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-2xl">Vote for Next Week's Special!</h3>
+                        <button id="edit-poll-btn" data-role="staff" class="flex items-center gap-2 bg-brand-primary text-white py-2 px-4 rounded-lg font-semibold hover:bg-teal-700">
+                            <i data-lucide="pencil" class="h-4 w-4"></i>Edit Poll
+                        </button>
+                    </div>
+                    <div id="poll-view">
+                        <div id="poll-thanks" class="hidden text-center p-6 mb-4 bg-teal-50 dark:bg-teal-900/30 rounded-lg border border-teal-200 dark:border-teal-800">
+                            <i data-lucide="check-circle-2" class="text-teal-500 h-12 w-12 mx-auto mb-3"></i>
+                            <h4 class="text-lg font-semibold">Thanks for voting!</h4>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">See the current results below.</p>
+                        </div>
+                        <div id="poll-container"></div>
+                    </div>
+                     <div id="poll-edit-form" class="hidden">
+                        <!-- Edit form will be generated here by JS -->
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // ---ELEMENT SELECTORS---
+            const loginPage = document.getElementById('login-page');
+            const loginForm = document.getElementById('login-form');
+            const appContainer = document.getElementById('app-container');
+            const logoutBtn = document.getElementById('logout-btn');
+            const userInfoEl = document.getElementById('user-info');
+
+            const themeToggle = document.getElementById('theme-toggle');
+            const htmlEl = document.documentElement;
+            const greetingEl = document.getElementById('greeting');
+            const dateTimeEl = document.getElementById('date-time');
+            const navLinks = document.querySelectorAll('.nav-link');
+            const quickLinks = document.querySelectorAll('.quick-link');
+            const widgets = document.querySelectorAll('.widget');
+            
+            const menuSection = {
+                container: document.getElementById('menu'),
+                view: document.getElementById('menu-view'),
+                editForm: document.getElementById('menu-edit-form'),
+                editBtn: document.getElementById('edit-menu-btn'),
+                tabsContainer: document.getElementById('menu-tabs'),
+                contentContainer: document.getElementById('menu-content'),
+            };
+
+            const wasteSection = {
+                chartContainer: document.getElementById('waste-chart-container'),
+                noDataEl: document.getElementById('no-waste-data'),
+                reportingContainer: document.getElementById('waste-reporting-section'),
+                form: document.getElementById('waste-report-form'),
+                thanks: document.getElementById('waste-report-thanks'),
+            };
+
+            const complaintSection = {
+                submissionContainer: document.getElementById('complaint-submission-section'),
+                listContainer: document.getElementById('complaint-list-section'),
+                list: document.getElementById('complaint-list-container'),
+                form: document.getElementById('complaint-form'),
+                thanks: document.getElementById('complaint-thanks'),
+            };
+
+            const pollSection = {
+                container: document.getElementById('polls'),
+                view: document.getElementById('poll-view'),
+                editForm: document.getElementById('poll-edit-form'),
+                editBtn: document.getElementById('edit-poll-btn'),
+                thanks: document.getElementById('poll-thanks'),
+                pollContainer: document.getElementById('poll-container'),
+            };
+
+            const feedbackSection = {
+                form: document.getElementById('feedback-form'),
+                thanks: document.getElementById('feedback-thanks'),
+                statsContainer: document.getElementById('feedback-chart-container'),
+                noDataEl: document.getElementById('no-feedback-data'),
+            }
+            
+            const suggestionForm = document.getElementById('suggestion-form');
+            const suggestionThanks = document.getElementById('suggestion-thanks');
+            const moodBackgroundBtn = document.getElementById('mood-background-btn');
+            
+            // ---APP STATE---
+            let currentUser = null;
+            let menuData = {};
+            let pollData = {};
+            let wasteData = {};
+
+            const backgroundGradients = [
+                'bg-light-bg dark:bg-dark-bg', // Default
+                'bg-gradient-to-br from-slate-50 to-gray-100 dark:from-slate-800 dark:to-slate-900',
+                'bg-gradient-to-br from-rose-50 to-pink-100 dark:from-rose-900 dark:to-pink-900',
+                'bg-gradient-to-br from-teal-50 to-cyan-100 dark:from-teal-900 dark:to-cyan-900',
+                'bg-gradient-to-br from-amber-50 to-yellow-100 dark:from-amber-900 dark:to-yellow-900'
+            ];
+            let currentGradientIndex = 0;
+
+
+            // ---INITIALIZATION---
+            function initApp() {
+                // Theme
+                const savedTheme = localStorage.getItem('theme');
+                if (savedTheme === 'dark') {
+                    htmlEl.classList.add('dark');
+                }
+                updateThemeIcon();
+
+                // Clock & Greeting
+                updateTime();
+                setInterval(updateTime, 1000);
+
+                // Icons
+                lucide.createIcons();
+
+                // Navigation
+                setupNavigation();
+                
+                // Initial Content
+                loadData();
+                setupRoleBasedUI();
+                showWidget('dashboard');
+                renderMenu('Monday');
+                renderWasteSection();
+                renderComplaintsSection();
+                renderFeedbackStats();
+                renderPoll();
+            }
+
+            function loadData() {
+                const defaultMenu = {
+                    Monday: { Breakfast: "Poha, Jalebi", Lunch: "Rajma Chawal, Salad", Snacks: "Samosa, Tea", Dinner: "Aloo Gobi, Roti" },
+                    Tuesday: { Breakfast: "Idli Sambar", Lunch: "Chole Bhature", Snacks: "Veg Cutlet, Coffee", Dinner: "Paneer Butter Masala, Naan" },
+                    Wednesday: { Breakfast: "Aloo Paratha, Curd", Lunch: "Kadhi Pakoda, Rice", Snacks: "Bread Pakoda, Tea", Dinner: "Mix Veg, Roti" },
+                    Thursday: { Breakfast: "Upma, Coconut Chutney", Lunch: "Veg Biryani, Raita", Snacks: "Dhokla, Green Chutney", Dinner: "Dal Makhani, Jeera Rice" },
+                    Friday: { Breakfast: "Dosa, Chutney", Lunch: "Thali (Dal, Sabzi, Roti, Rice)", Snacks: "Vada Pav, Tea", Dinner: "Pav Bhaji" },
+                    Saturday: { Breakfast: "Masala Oats", Lunch: "Fried Rice, Manchurian", Snacks: "Spring Roll, Coffee", Dinner: "Chana Masala, Puri" },
+                    Sunday: { Breakfast: "Pancakes, Syrup", Lunch: "Special Thali, Sweet", Snacks: "Cake, Milkshake", Dinner: "Pizza Night" }
+                };
+                const defaultPoll = {
+                    id: 'special-dish-poll-1',
+                    question: 'What special dish should we have this Sunday?',
+                    options: ['Chicken Biryani', 'Mutton Rogan Josh', 'Shahi Paneer']
+                };
+
+                menuData = JSON.parse(localStorage.getItem('menuData')) || defaultMenu;
+                pollData = JSON.parse(localStorage.getItem('pollData')) || defaultPoll;
+                wasteData = JSON.parse(localStorage.getItem('wasteData')) || {};
+            }
+
+            function saveData() {
+                localStorage.setItem('menuData', JSON.stringify(menuData));
+                localStorage.setItem('pollData', JSON.stringify(pollData));
+                localStorage.setItem('wasteData', JSON.stringify(wasteData));
+            }
+
+            // --- AUTHENTICATION ---
+            function handleLogin(e) {
+                e.preventDefault();
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+                const role = document.getElementById('user-role').value;
+
+                const studentPassword = 'klh@1234';
+                const staffPassword = 'KLU';
+
+                let isAuthenticated = false;
+
+                if (role === 'student' && password === studentPassword) {
+                    isAuthenticated = true;
+                } else if (role === 'staff' && password === staffPassword) {
+                    isAuthenticated = true;
+                }
+
+                if(username && isAuthenticated) {
+                    currentUser = { username, role };
+                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    loginPage.classList.add('hidden');
+                    appContainer.classList.remove('hidden');
+                    appContainer.classList.add('flex');
+                    initApp();
+                } else {
+                    alert('Invalid username or password for the selected role.');
+                }
+            }
+
+            function handleLogout() {
+                currentUser = null;
+                localStorage.removeItem('currentUser');
+                appContainer.classList.add('hidden');
+                appContainer.classList.remove('flex');
+                loginPage.classList.remove('hidden');
+                location.reload(); // To reset state
+            }
+
+            function checkAuth() {
+                const user = localStorage.getItem('currentUser');
+                if(user) {
+                    currentUser = JSON.parse(user);
+                    loginPage.classList.add('hidden');
+                    appContainer.classList.remove('hidden');
+                    appContainer.classList.add('flex');
+                    initApp();
+                }
+            }
+
+            function setupRoleBasedUI() {
+                userInfoEl.textContent = `${currentUser.username} (${currentUser.role})`;
+                const elementsToToggle = document.querySelectorAll('[data-role]');
+                elementsToToggle.forEach(el => {
+                    if (el.dataset.role !== currentUser.role) {
+                        el.classList.add('hidden-by-role');
+                    } else {
+                        el.classList.remove('hidden-by-role');
+                    }
+                });
+            }
+
+            // ---THEME---
+            function toggleTheme() {
+                htmlEl.classList.toggle('dark');
+                const isDark = htmlEl.classList.contains('dark');
+                localStorage.setItem('theme', isDark ? 'dark' : 'light');
+                updateThemeIcon();
+                renderWasteChart(); // Re-render chart with new theme colors
+                renderFeedbackStats();
+            }
+            
+            function updateThemeIcon() {
+                const isDark = htmlEl.classList.contains('dark');
+                document.querySelector('#theme-toggle [data-lucide="sun"]').style.display = isDark ? 'none' : 'block';
+                document.querySelector('#theme-toggle [data-lucide="moon"]').style.display = isDark ? 'block' : 'none';
+            }
+
+            // ---DATE, TIME, GREETING---
+            function updateTime() {
+                const now = new Date();
+                const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const dateString = now.toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                dateTimeEl.textContent = `${dateString} | ${timeString}`;
+
+                const hour = now.getHours();
+                if (hour < 12) greetingEl.textContent = 'Good Morning!';
+                else if (hour < 18) greetingEl.textContent = 'Good Afternoon!';
+                else greetingEl.textContent = 'Good Evening!';
+            }
+
+            // ---NAVIGATION & WIDGET DISPLAY---
+            function showWidget(targetId) {
+                navLinks.forEach(l => l.classList.remove('active'));
+                const activeLink = document.querySelector(`.nav-link[href="#${targetId}"]`);
+                if(activeLink) activeLink.classList.add('active');
+
+                widgets.forEach(widget => {
+                    if (widget.id === targetId) {
+                        widget.classList.remove('hidden');
+                        widget.style.animation = 'none';
+                        widget.offsetHeight;
+                        widget.style.animation = null; 
+                    } else {
+                        widget.classList.add('hidden');
+                    }
+                });
+            }
+
+            function setupNavigation() {
+                const allLinks = [...navLinks, ...quickLinks];
+                allLinks.forEach(link => {
+                    link.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const targetId = link.getAttribute('href').substring(1);
+                        showWidget(targetId);
+                    });
+                });
+            }
+
+            // ---MENU---
+            function renderMenu(day) {
+                menuSection.tabsContainer.innerHTML = Object.keys(menuData).map(d => `
+                    <button class="menu-tab-btn px-4 py-3 -mb-px border-b-2 text-sm font-semibold ${d === day ? 'border-brand-primary text-brand-primary' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}" data-day="${d}">${d}</button>
+                `).join('');
+
+                const dayMenu = menuData[day];
+                menuSection.contentContainer.innerHTML = `
+                    <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800">
+                        <h4 class="font-bold text-lg text-blue-800 dark:text-blue-200 mb-2">Breakfast</h4>
+                        <p class="text-blue-700 dark:text-blue-300">${dayMenu.Breakfast}</p>
+                    </div>
+                    <div class="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-100 dark:border-green-800">
+                        <h4 class="font-bold text-lg text-green-800 dark:text-green-200 mb-2">Lunch</h4>
+                        <p class="text-green-700 dark:text-green-300">${dayMenu.Lunch}</p>
+                    </div>
+                    <div class="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border border-yellow-100 dark:border-yellow-800">
+                        <h4 class="font-bold text-lg text-yellow-800 dark:text-yellow-200 mb-2">Snacks</h4>
+                        <p class="text-yellow-700 dark:text-yellow-300">${dayMenu.Snacks}</p>
+                    </div>
+                    <div class="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border border-red-100 dark:border-red-800">
+                        <h4 class="font-bold text-lg text-red-800 dark:text-red-200 mb-2">Dinner</h4>
+                        <p class="text-red-700 dark:text-red-300">${dayMenu.Dinner}</p>
+                    </div>
+                `;
+                
+                document.querySelectorAll('.menu-tab-btn').forEach(btn => {
+                    btn.addEventListener('click', () => renderMenu(btn.dataset.day));
+                });
+            }
+
+            function showMenuEditForm() {
+                menuSection.view.classList.add('hidden');
+                menuSection.editForm.classList.remove('hidden');
+                let formHtml = '<form id="menu-editor">';
+                for (const day in menuData) {
+                    formHtml += `<fieldset class="mb-6 border p-4 rounded-lg"><legend class="font-semibold px-2">${day}</legend>
+                        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+                            <div><label class="block text-sm mb-1">Breakfast</label><input type="text" data-day="${day}" data-meal="Breakfast" value="${menuData[day].Breakfast}" class="w-full p-2 border rounded bg-gray-50 dark:bg-gray-800 dark:border-gray-600"></div>
+                            <div><label class="block text-sm mb-1">Lunch</label><input type="text" data-day="${day}" data-meal="Lunch" value="${menuData[day].Lunch}" class="w-full p-2 border rounded bg-gray-50 dark:bg-gray-800 dark:border-gray-600"></div>
+                            <div><label class="block text-sm mb-1">Snacks</label><input type="text" data-day="${day}" data-meal="Snacks" value="${menuData[day].Snacks}" class="w-full p-2 border rounded bg-gray-50 dark:bg-gray-800 dark:border-gray-600"></div>
+                            <div><label class="block text-sm mb-1">Dinner</label><input type="text" data-day="${day}" data-meal="Dinner" value="${menuData[day].Dinner}" class="w-full p-2 border rounded bg-gray-50 dark:bg-gray-800 dark:border-gray-600"></div>
+                        </div></fieldset>`;
+                }
+                formHtml += `<div class="flex gap-4 mt-4">
+                    <button type="submit" class="w-full bg-brand-primary text-white py-2 px-4 rounded-lg font-semibold">Save Changes</button>
+                    <button type="button" id="cancel-menu-edit" class="w-full bg-gray-200 dark:bg-gray-600 py-2 px-4 rounded-lg font-semibold">Cancel</button>
+                </div></form>`;
+                menuSection.editForm.innerHTML = formHtml;
+
+                document.getElementById('menu-editor').addEventListener('submit', saveMenuChanges);
+                document.getElementById('cancel-menu-edit').addEventListener('click', hideMenuEditForm);
+            }
+
+            function hideMenuEditForm() {
+                menuSection.editForm.classList.add('hidden');
+                menuSection.view.classList.remove('hidden');
+            }
+
+            function saveMenuChanges(e) {
+                e.preventDefault();
+                const inputs = e.target.querySelectorAll('input[type="text"]');
+                inputs.forEach(input => {
+                    menuData[input.dataset.day][input.dataset.meal] = input.value;
+                });
+                saveData();
+                hideMenuEditForm();
+                renderMenu(Object.keys(menuData)[0]); // Re-render menu
+                alert('Menu updated successfully!');
+            }
+
+            // ---FEEDBACK---
+            feedbackSection.form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                const breakfastRating = feedbackSection.form.querySelector('input[name="rating-breakfast"]:checked');
+                const lunchRating = feedbackSection.form.querySelector('input[name="rating-lunch"]:checked');
+                const snacksRating = feedbackSection.form.querySelector('input[name="rating-snacks"]:checked');
+                const dinnerRating = feedbackSection.form.querySelector('input[name="rating-dinner"]:checked');
+
+                const feedbackData = {
+                    user: currentUser.username,
+                    ratings: {
+                        breakfast: breakfastRating ? breakfastRating.value : 'N/A',
+                        lunch: lunchRating ? lunchRating.value : 'N/A',
+                        snacks: snacksRating ? snacksRating.value : 'N/A',
+                        dinner: dinnerRating ? dinnerRating.value : 'N/A',
+                    },
+                    comment: document.getElementById('comments').value,
+                    timestamp: new Date().toISOString()
+                };
+                let allFeedback = JSON.parse(localStorage.getItem('allFeedback')) || [];
+                allFeedback.push(feedbackData);
+                localStorage.setItem('allFeedback', JSON.stringify(allFeedback));
+                
+                feedbackSection.form.classList.add('hidden');
+                feedbackSection.thanks.classList.remove('hidden');
+                lucide.createIcons();
+            });
+
+            let feedbackChartInstance = null;
+            function renderFeedbackStats() {
+                if(currentUser.role !== 'staff') return;
+                if (feedbackChartInstance) feedbackChartInstance.destroy();
+
+                const ctx = document.getElementById('feedback-chart').getContext('2d');
+                const isDark = htmlEl.classList.contains('dark');
+                const allFeedback = JSON.parse(localStorage.getItem('allFeedback')) || [];
+
+                if (allFeedback.length === 0) {
+                    feedbackSection.statsContainer.querySelector('canvas').classList.add('hidden');
+                    feedbackSection.noDataEl.classList.remove('hidden');
+                    feedbackSection.noDataEl.classList.add('flex');
+                    return;
+                }
+                feedbackSection.statsContainer.querySelector('canvas').classList.remove('hidden');
+                feedbackSection.noDataEl.classList.add('hidden');
+                feedbackSection.noDataEl.classList.remove('flex');
+                
+                const mealStats = {
+                    breakfast: { total: 0, count: 0 },
+                    lunch: { total: 0, count: 0 },
+                    snacks: { total: 0, count: 0 },
+                    dinner: { total: 0, count: 0 },
+                };
+
+                allFeedback.forEach(fb => {
+                    for (const meal in fb.ratings) {
+                        const rating = parseInt(fb.ratings[meal]);
+                        if (!isNaN(rating)) {
+                            mealStats[meal].total += rating;
+                            mealStats[meal].count++;
+                        }
+                    }
+                });
+
+                const labels = ['Breakfast', 'Lunch', 'Snacks', 'Dinner'];
+                const data = labels.map(label => {
+                    const meal = label.toLowerCase();
+                    return mealStats[meal].count > 0 ? (mealStats[meal].total / mealStats[meal].count).toFixed(2) : 0;
+                });
+
+                feedbackChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Average Rating',
+                            data: data,
+                            backgroundColor: [
+                                'rgba(54, 162, 235, 0.6)',
+                                'rgba(75, 192, 192, 0.6)',
+                                'rgba(255, 206, 86, 0.6)',
+                                'rgba(255, 99, 132, 0.6)'
+                            ],
+                            borderColor: [
+                                'rgba(54, 162, 235, 1)',
+                                'rgba(75, 192, 192, 1)',
+                                'rgba(255, 206, 86, 1)',
+                                'rgba(255, 99, 132, 1)'
+                            ],
+                            borderWidth: 1,
+                            borderRadius: 4,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 5,
+                                grid: { color: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' },
+                                ticks: { color: isDark ? '#9ca3af' : '#4b5563', font: { weight: '500' } }
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: { color: isDark ? '#9ca3af' : '#4b5563', font: { weight: '600', size: 14 } }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: false },
+                        }
+                    }
+                });
+            }
+
+            // ---WASTE STATS---
+            let wasteChartInstance = null;
+            function renderWasteSection() {
+                renderWasteChart();
+                if (currentUser.role === 'student') {
+                    renderWasteReportPoll();
+                }
+            }
+
+            function renderWasteChart() {
+                if (wasteChartInstance) wasteChartInstance.destroy();
+                
+                const ctx = document.getElementById('waste-chart').getContext('2d');
+                const isDark = htmlEl.classList.contains('dark');
+                
+                const sortedWaste = Object.entries(wasteData).sort(([,a],[,b]) => b-a).slice(0, 7);
+                const labels = sortedWaste.map(item => item[0]);
+                const data = sortedWaste.map(item => item[1]);
+
+                if (labels.length === 0) {
+                    wasteSection.chartContainer.querySelector('canvas').classList.add('hidden');
+                    wasteSection.noDataEl.classList.remove('hidden');
+                    wasteSection.noDataEl.classList.add('flex');
+                    return;
+                }
+                wasteSection.chartContainer.querySelector('canvas').classList.remove('hidden');
+                wasteSection.noDataEl.classList.add('hidden');
+                wasteSection.noDataEl.classList.remove('flex');
+
+                const gradient = ctx.createLinearGradient(0, 0, 0, ctx.canvas.height);
+                gradient.addColorStop(0, 'rgba(249, 115, 22, 0.6)');
+                gradient.addColorStop(1, 'rgba(253, 186, 116, 0.6)');
+
+
+                wasteChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Waste Reports',
+                            data: data,
+                            backgroundColor: gradient,
+                            borderColor: 'rgba(249, 115, 22, 1)',
+                            borderWidth: 2,
+                            borderRadius: 4,
+                            borderSkipped: false,
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                grid: { display: false },
+                                ticks: { color: isDark ? '#9ca3af' : '#4b5563', font: { weight: '600', size: 14 } }
+                            },
+                             x: {
+                                grid: { color: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' },
+                                ticks: { color: isDark ? '#9ca3af' : '#4b5563', font: { weight: '500' } }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: isDark ? '#111827' : '#fff',
+                                titleColor: isDark ? '#fff' : '#111',
+                                bodyColor: isDark ? '#fff' : '#111',
+                                borderColor: isDark ? '#374151' : '#e5e7eb',
+                                borderWidth: 1,
+                                padding: 12,
+                                cornerRadius: 8,
+                                bodyFont: { weight: '600' },
+                                callbacks: {
+                                    label: (context) => `${context.raw} reports`
+                                }
+                            }
+                        },
+                        animation: {
+                            duration: 1000,
+                            easing: 'easeOutQuart'
+                        }
+                    }
+                });
+            }
+
+            function renderWasteReportPoll() {
+                const today = new Date().toDateString();
+                const lastReportDate = localStorage.getItem(`wasteReport_${currentUser.username}`);
+
+                if (lastReportDate === today) {
+                    wasteSection.form.classList.add('hidden');
+                    wasteSection.thanks.classList.remove('hidden');
+                    lucide.createIcons();
+                    return;
+                }
+                
+                wasteSection.form.classList.remove('hidden');
+                wasteSection.thanks.classList.add('hidden');
+
+                const dayOfWeek = new Date().toLocaleString('en-us', {weekday: 'long'});
+                const todayMenu = menuData[dayOfWeek];
+                if (!todayMenu) {
+                    wasteSection.form.innerHTML = `<p>No menu available for today to report waste.</p>`;
+                    return;
+                }
+                
+                const menuItems = [...new Set([...todayMenu.Breakfast.split(','), ...todayMenu.Lunch.split(','), ...todayMenu.Snacks.split(','), ...todayMenu.Dinner.split(',')].map(i => i.trim()).filter(i => i))];
+                
+                let formHtml = `<div class="grid grid-cols-2 md:grid-cols-3 gap-4">`;
+                menuItems.forEach((item, index) => {
+                    formHtml += `
+                        <label for="waste-item-${index}" class="flex items-center gap-2 p-3 border dark:border-gray-700 rounded-lg cursor-pointer has-[:checked]:bg-red-50 has-[:checked]:border-red-500">
+                            <input type="checkbox" name="wasted-item" value="${item.trim()}" id="waste-item-${index}" class="h-4 w-4 rounded border-gray-300 text-brand-secondary focus:ring-brand-secondary">
+                            <span class="font-medium text-sm">${item.trim()}</span>
+                        </label>
+                    `;
+                });
+                formHtml += `</div><button type="submit" class="mt-6 w-full bg-brand-secondary text-white py-3 px-4 rounded-lg font-semibold hover:bg-orange-600">Report Wasted Items</button>`;
+                wasteSection.form.innerHTML = formHtml;
+                wasteSection.form.addEventListener('submit', handleWasteReport);
+            }
+
+            function handleWasteReport(e) {
+                e.preventDefault();
+                const checkedItems = wasteSection.form.querySelectorAll('input[name="wasted-item"]:checked');
+                if (checkedItems.length === 0) {
+                    alert('Please select at least one item.');
+                    return;
+                }
+
+                checkedItems.forEach(item => {
+                    const dish = item.value;
+                    wasteData[dish] = (wasteData[dish] || 0) + 1;
+                });
+                
+                saveData();
+                localStorage.setItem(`wasteReport_${currentUser.username}`, new Date().toDateString());
+                
+                renderWasteSection();
+            }
+
+            // ---COMPLAINTS---
+            function renderComplaintsSection() {
+                if (currentUser.role !== 'staff') return;
+
+                const allComplaints = JSON.parse(localStorage.getItem('allComplaints')) || [];
+                const container = complaintSection.list;
+                
+                if (allComplaints.length === 0) {
+                    container.innerHTML = `<div class="text-center py-10"><p class="text-gray-500">No complaints have been submitted yet.</p></div>`;
+                    return;
+                }
+
+                container.innerHTML = allComplaints.reverse().map(c => {
+                    const date = new Date(c.timestamp);
+                    const formattedDate = date.toLocaleDateString([], { year: 'numeric', month: 'long', day: 'numeric' });
+                    const formattedTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                    return `
+                        <div class="bg-light-bg dark:bg-dark-bg p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                            <p class="mb-2">${c.issue}</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Received on ${formattedDate} at ${formattedTime}</p>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            complaintSection.form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const complaintData = {
+                    user: currentUser.username, // Stored for data integrity, but not shown to staff
+                    issue: document.getElementById('complaint-issue').value,
+                    timestamp: new Date().toISOString()
+                };
+                let allComplaints = JSON.parse(localStorage.getItem('allComplaints')) || [];
+                allComplaints.push(complaintData);
+                localStorage.setItem('allComplaints', JSON.stringify(allComplaints));
+
+                complaintSection.form.parentElement.classList.add('hidden');
+                complaintSection.thanks.classList.remove('hidden');
+                lucide.createIcons();
+            });
+
+            // ---DISH SUGGESTION---
+            suggestionForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const suggestionData = {
+                    user: currentUser.username,
+                    suggestion: document.getElementById('suggestion-text').value,
+                    timestamp: new Date().toISOString()
+                };
+                let allSuggestions = JSON.parse(localStorage.getItem('allSuggestions')) || [];
+                allSuggestions.push(suggestionData);
+                localStorage.setItem('allSuggestions', JSON.stringify(allSuggestions));
+
+                suggestionForm.classList.add('hidden');
+                suggestionThanks.classList.remove('hidden');
+                lucide.createIcons();
+            });
+
+            // ---POLLS---
+            function renderPoll() {
+                const hasVoted = localStorage.getItem(`${pollData.id}_${currentUser.username}`);
+                showPollResults();
+
+                if (currentUser.role === 'staff' || hasVoted) {
+                    if(hasVoted) pollSection.thanks.classList.remove('hidden');
+                    lucide.createIcons();
+                } else {
+                    const formHtml = `
+                        <form id="poll-form" class="space-y-3 mt-6">
+                            ${pollData.options.map((opt, index) => `
+                                <label for="opt-${index}" class="block p-4 border dark:border-gray-700 rounded-lg cursor-pointer hover:border-brand-primary dark:hover:border-brand-primary has-[:checked]:bg-teal-50 has-[:checked]:border-brand-primary">
+                                    <input type="radio" name="poll-option" value="${index}" id="opt-${index}" class="hidden">
+                                    <span class="font-medium">${opt}</span>
+                                </label>
+                            `).join('')}
+                            <button type="submit" class="mt-4 w-full bg-brand-primary text-white py-3 px-4 rounded-lg font-semibold hover:bg-teal-700">Cast My Vote</button>
+                        </form>
+                    `;
+                    pollSection.pollContainer.insertAdjacentHTML('beforeend', formHtml);
+                    document.getElementById('poll-form').addEventListener('submit', handleVote);
+                }
+            }
+
+            function handleVote(e) {
+                e.preventDefault();
+                const pollForm = document.getElementById('poll-form');
+                const selectedOption = pollForm.querySelector('input[name="poll-option"]:checked');
+                if (!selectedOption) {
+                    alert('Please select an option to vote.');
+                    return;
+                }
+                
+                localStorage.setItem(`${pollData.id}_${currentUser.username}`, 'voted');
+                let votes = JSON.parse(localStorage.getItem(`${pollData.id}-votes`)) || new Array(pollData.options.length).fill(0);
+                votes[selectedOption.value]++;
+                localStorage.setItem(`${pollData.id}-votes`, JSON.stringify(votes));
+                
+                pollForm.remove();
+                pollSection.thanks.classList.remove('hidden');
+                lucide.createIcons();
+                showPollResults();
+            }
+
+            function showPollResults() {
+                let votes = JSON.parse(localStorage.getItem(`${pollData.id}-votes`)) || new Array(pollData.options.length).fill(0);
+                const totalVotes = votes.reduce((sum, v) => sum + v, 0);
+                const maxVotes = Math.max(...votes);
+
+                const existingResults = pollSection.pollContainer.querySelector('#poll-results-container');
+                if(existingResults) existingResults.remove();
+
+                const resultsHtml = `
+                    <div id="poll-results-container" class="space-y-4">
+                        <p class="font-semibold text-lg">${pollData.question}</p>
+                        ${pollData.options.map((opt, index) => {
+                            const percentage = totalVotes > 0 ? ((votes[index] / totalVotes) * 100).toFixed(0) : 0;
+                            const isLeading = votes[index] === maxVotes && maxVotes > 0;
+                            return `
+                                <div>
+                                    <div class="flex justify-between mb-1">
+                                        <span class="font-semibold ${isLeading ? 'text-brand-primary' : ''}">${opt} ${isLeading ? '<span>&#128081;</span>' : ''}</span>
+                                        <span class="text-sm font-medium text-gray-500 dark:text-gray-400">${votes[index]} votes</span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                                        <div class="bg-brand-primary h-2.5 rounded-full transition-all duration-500" style="width: ${percentage}%"></div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                `;
+                pollSection.pollContainer.insertAdjacentHTML('afterbegin', resultsHtml);
+            }
+
+            function showPollEditForm() {
+                pollSection.view.classList.add('hidden');
+                pollSection.editForm.classList.remove('hidden');
+                let formHtml = `<form id="poll-editor">
+                    <div class="mb-4">
+                        <label class="block text-sm mb-1">Poll Question</label>
+                        <input type="text" id="poll-question-input" value="${pollData.question}" class="w-full p-2 border rounded bg-gray-50 dark:bg-gray-800 dark:border-gray-600">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm mb-1">Options (comma-separated)</label>
+                        <input type="text" id="poll-options-input" value="${pollData.options.join(', ')}" class="w-full p-2 border rounded bg-gray-50 dark:bg-gray-800 dark:border-gray-600">
+                    </div>
+                    <div class="flex gap-4 mt-4">
+                        <button type="submit" class="w-full bg-brand-primary text-white py-2 px-4 rounded-lg font-semibold">Save Poll</button>
+                        <button type="button" id="cancel-poll-edit" class="w-full bg-gray-200 dark:bg-gray-600 py-2 px-4 rounded-lg font-semibold">Cancel</button>
+                    </div>
+                </form>`;
+                pollSection.editForm.innerHTML = formHtml;
+
+                document.getElementById('poll-editor').addEventListener('submit', savePollChanges);
+                document.getElementById('cancel-poll-edit').addEventListener('click', hidePollEditForm);
+            }
+
+            function hidePollEditForm() {
+                pollSection.editForm.classList.add('hidden');
+                pollSection.view.classList.remove('hidden');
+            }
+
+            function savePollChanges(e) {
+                e.preventDefault();
+                const newQuestion = document.getElementById('poll-question-input').value;
+                const newOptions = document.getElementById('poll-options-input').value.split(',').map(s => s.trim());
+                
+                if (confirm('Saving a new poll will reset all current votes. Are you sure?')) {
+                    pollData.question = newQuestion;
+                    pollData.options = newOptions;
+                    // Reset votes
+                    localStorage.removeItem(`${pollData.id}-votes`);
+                    // Also clear individual user votes for this poll
+                    Object.keys(localStorage).forEach(key => {
+                        if (key.startsWith(pollData.id + '_')) {
+                            localStorage.removeItem(key);
+                        }
+                    });
+                    
+                    saveData();
+                    hidePollEditForm();
+                    pollSection.pollContainer.innerHTML = ''; // Clear old content
+                    renderPoll();
+                    alert('Poll updated successfully! Votes have been reset.');
+                }
+            }
+
+
+            // ---MOOD BACKGROUND---
+            moodBackgroundBtn.addEventListener('click', () => {
+                currentGradientIndex = (currentGradientIndex + 1) % backgroundGradients.length;
+                appContainer.className = `min-h-screen flex flex-col lg:flex-row transition-all duration-500 ${backgroundGradients[currentGradientIndex]}`;
+            });
+
+            // ---EVENT LISTENERS---
+            loginForm.addEventListener('submit', handleLogin);
+            logoutBtn.addEventListener('click', handleLogout);
+            themeToggle.addEventListener('click', toggleTheme);
+            menuSection.editBtn.addEventListener('click', showMenuEditForm);
+            pollSection.editBtn.addEventListener('click', showPollEditForm);
+            
+            // ---START THE APP---
+            checkAuth();
+        });
+    </script>
+</body>
+</html>
